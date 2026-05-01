@@ -1,3 +1,12 @@
+-- ██╗   ██╗██╗    ██╗██╗   ██╗    ██████╗ ██╗      █████╗ ██████╗ ███████╗    ██████╗  █████╗ ██╗     ██╗
+-- ██║   ██║██║    ██║██║   ██║    ██╔══██╗██║     ██╔══██╗██╔══██╗██╔════╝    ██╔══██╗██╔══██╗██║     ██║
+-- ██║   ██║██║ █╗ ██║██║   ██║    ██████╔╝██║     ███████║██║  ██║█████╗      ██████╔╝███████║██║     ██║
+-- ██║   ██║██║███╗██║██║   ██║    ██╔══██╗██║     ██╔══██║██║  ██║██╔══╝      ██╔══██╗██╔══██║██║     ██║
+-- ╚██████╔╝╚███╔███╔╝╚██████╔╝    ██████╔╝███████╗██║  ██║██████╔╝███████╗    ██████╔╝██║  ██║███████╗███████╗
+--  ╚═════╝  ╚══╝╚══╝  ╚═════╝     ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═════╝ ╚══════╝   ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+-- UwU Blade Ball v2.0 | Dev: SnoZ |
+
+-- ── SERVICES ───────────────────────────────────
 local Players      = game:GetService("Players")
 local RunService   = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -7,7 +16,7 @@ local VIM          = game:GetService("VirtualInputManager")
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
---VARIABLES 
+-- ── VARIABLES ──────────────────────────────────
 local RandRNG               = math.random()
 local RandAutoParry         = {[tostring(RandRNG)] = false}
 local AutoWalk              = false
@@ -24,7 +33,7 @@ local TeleportDistanceZ     = 0
 local BallSpeed             = 0
 local CanSlash              = false
 
---PLAYER SELECTOR
+-- ── PLAYER SELECTOR ────────────────────────────
 local SelectedPlayer        = nil
 local FocusMode             = false
 
@@ -1206,7 +1215,7 @@ do
     focusBtn.Position = UDim2.new(0.38,0,0.5,-14)
     focusBtn.BackgroundColor3 = _ACCENT1
     focusBtn.BackgroundTransparency = 0.82
-    focusBtn.Text = "Focus"
+    focusBtn.Text = "🎯 Focus"
     focusBtn.TextColor3 = _ACCENT1
     focusBtn.TextTransparency = 0.2
     focusBtn.TextSize = 11
@@ -1224,10 +1233,10 @@ do
         if not SelectedPlayer then return end
         FocusMode = not FocusMode
         if FocusMode then
-            focusBtn.Text = "Focus ✓"
+            focusBtn.Text = "🎯 Focus ✓"
             focusBtn.BackgroundTransparency = 0.5
         else
-            focusBtn.Text = "Focus"
+            focusBtn.Text = "🎯 Focus"
             focusBtn.BackgroundTransparency = 0.82
         end
     end)
@@ -1238,7 +1247,7 @@ do
     tpBtn.Position = UDim2.new(1,-98,0.5,-14)
     tpBtn.BackgroundColor3 = Color3.fromRGB(80, 255, 180)
     tpBtn.BackgroundTransparency = 0.82
-    tpBtn.Text = "TP"
+    tpBtn.Text = "⚡ TP"
     tpBtn.TextColor3 = Color3.fromRGB(80, 255, 180)
     tpBtn.TextTransparency = 0.2
     tpBtn.TextSize = 11
@@ -1798,35 +1807,46 @@ task.spawn(function()
     end
 end)
 
--- ── LOGIQUE: Auto Parry ────────────────────────
-task.spawn(function()
-    while task.wait() do
-        if RandAutoParry[tostring(RandRNG)] then
-            pcall(function()
-                for _, v in pairs(workspace.Balls:GetChildren()) do
-                    if v:IsA("Part") then
-                        if not player.Character:FindFirstChild("Highlight") then return end
-                        local part, speed = getSpeed(v)
-                        if part and speed then
-                            local minDist = 2.5 * (speed * 0.1) + 2
-                            if minDist <= 20 then BallSpeed = 23
-                            elseif minDist <= 88 then BallSpeed = 2.5 * (speed * 0.1) + 5
-                            elseif minDist <= 110 then BallSpeed = 90 end
-                            CanSlash = (player.Character.HumanoidRootPart.Position - part.Position).Magnitude <= BallSpeed
-                        end
-                    end
+-- ── LOGIQUE: Auto Parry (0 delay - RunService) ─
+RunService.Heartbeat:Connect(function()
+    if not RandAutoParry[tostring(RandRNG)] then return end
+    pcall(function()
+        local char = player.Character
+        if not char then return end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        -- Doit avoir le Highlight (balle ciblée sur nous)
+        if not char:FindFirstChild("Highlight") then return end
+
+        for _, v in pairs(workspace.Balls:GetChildren()) do
+            if v:IsA("BasePart") then
+                local vel = v.Velocity.Magnitude
+                if vel <= 1 then continue end
+
+                local dist = (hrp.Position - v.Position).Magnitude
+
+                -- Calcul dynamique du seuil de frappe selon la vitesse
+                local threshold
+                if vel <= 80 then
+                    threshold = 23
+                elseif vel <= 350 then
+                    threshold = 2.5 * (vel * 0.1) + 5
+                else
+                    threshold = 90
                 end
-                if CanSlash then
-                    if math.random(1,5) == 5 then
-                        VIM:SendMouseButtonEvent(0,0,0,true,game,1)
-                    else
-                        VIM:SendKeyEvent(true, Enum.KeyCode[KeyCodeBlock], false, game)
-                    end
-                    CanSlash = false
+
+                -- Si la balle est dans la zone de frappe → on tape IMMÉDIATEMENT
+                if dist <= threshold then
+                    -- Spam les deux inputs en même frame pour 0 délai
+                    VIM:SendKeyEvent(true,  Enum.KeyCode[KeyCodeBlock], false, game)
+                    VIM:SendKeyEvent(false, Enum.KeyCode[KeyCodeBlock], false, game)
+                    VIM:SendMouseButtonEvent(0,0,0,true,  game, 1)
+                    VIM:SendMouseButtonEvent(0,0,0,false, game, 1)
+                    break -- une frappe par frame suffit
                 end
-            end)
+            end
         end
-    end
+    end)
 end)
 
 -- ── LOGIQUE: Auto Walk + Auto Jump ────────────
@@ -1910,4 +1930,4 @@ end)
 -- ── INIT ───────────────────────────────────────
 showPage("cheat")
 
-print("[UwU] Blade Ball v2.0 chargé — by SnoZ")
+print("[UwU] Blade Ball v2.0 chargé — by SnoZet")
